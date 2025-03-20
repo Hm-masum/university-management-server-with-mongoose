@@ -2,20 +2,31 @@ import express from 'express';
 import validateRequest from '../../middlewares/validateRequest';
 import { CourseValidations } from './course.validation';
 import { courseController } from './course.controller';
+import auth from '../../middlewares/auth';
 
 const router = express.Router();
 
 router.post(
   '/create-course',
+  auth('admin'),
   validateRequest(CourseValidations.createCourseValidationSchema),
   courseController.createCourse,
 );
 
-router.get('/:id', courseController.getSingleCourse);
-router.get('/', courseController.getAllCourse);
+router.get(
+  '/:id',
+  auth('student', 'faculty', 'admin'),
+  courseController.getSingleCourse,
+);
+router.get(
+  '/',
+  auth('student', 'faculty', 'admin'),
+  courseController.getAllCourse,
+);
 
 router.patch(
   '/:id',
+  auth('admin'),
   validateRequest(CourseValidations.updateCourseValidationSchema),
   courseController.updateCourse,
 );
@@ -32,6 +43,6 @@ router.delete(
   courseController.removeFacultiesFromCourse,
 );
 
-router.delete('/:id', courseController.deleteCourse);
+router.delete('/:id', auth('admin'), courseController.deleteCourse);
 
 export const CourseRoutes = router;
