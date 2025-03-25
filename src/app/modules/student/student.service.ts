@@ -8,73 +8,11 @@ import QueryBuilder from '../../builder/QueryBuilder';
 import { studentSearchAbleFields } from './student.constant';
 
 const getAllStudentFromDb = async (query: Record<string, unknown>) => {
-  // const queryObj = { ...query };
-
-  // const studentSearchAbleFields = ['email', 'name.firstName', 'presentAddress'];
-
-  // let searchTerm = '';
-  // if (query?.searchTerm) {
-  //   searchTerm = query?.searchTerm as string;
-  // }
-
-  // const searchQuery = Student.find({
-  //   $or: studentSearchAbleFields.map((field) => ({
-  //     [field]: { $regex: searchTerm, $options: 'i' },
-  //   })),
-  // });
-
-  // const excludeFields = ['searchTerm', 'sort', 'limit', 'page', 'fields'];
-  // excludeFields.forEach((el) => delete queryObj[el]);
-
-  // const filterQuery = searchQuery
-  //   .find(queryObj)
-  //   .populate('admissionSemester')
-  //   .populate({
-  //     path: 'academicDepartment',
-  //     populate: {
-  //       path: 'academicFaculty',
-  //     },
-  //   });
-
-  // sorting
-  // let sort = '-createdAt';
-  // if (query.sort) {
-  //   sort = query.sort as string;
-  // }
-  // const sortQuery = filterQuery.sort(sort);
-
-  // pagination and limit
-  // let page = 1;
-  // let limit = 1;
-  // let skip = 0;
-  // if (query.limit) {
-  //   limit = Number(query.limit);
-  // }
-  // if (query.page) {
-  //   page = Number(query.page);
-  //   skip = (page - 1) * 10;
-  // }
-  // const paginateQuery = sortQuery.skip(skip);
-  // const limitQuery = paginateQuery.limit(limit);
-
-  // field limiting
-  // let fields = '-__v';
-  // if (query.fields) {
-  //   fields = (query.fields as string).split(',').join(' ');
-  // }
-  // const fieldQuery = await limitQuery.select(fields);
-  // return fieldQuery;
-
   const studentQuery = new QueryBuilder(
     Student.find()
       .populate('user')
       .populate('admissionSemester')
-      .populate({
-        path: 'academicDepartment',
-        populate: {
-          path: 'academicFaculty',
-        },
-      }),
+      .populate('academicDepartment academicFaculty'),
     query,
   )
     .search(studentSearchAbleFields)
@@ -83,7 +21,8 @@ const getAllStudentFromDb = async (query: Record<string, unknown>) => {
     .paginate()
     .fields();
   const result = await studentQuery.modelQuery;
-  return result;
+  const meta = await studentQuery.countTotal();
+  return { result, meta };
 };
 
 const getSingleStudentFromDb = async (id: string) => {
@@ -155,10 +94,10 @@ const deleteStudentFromDb = async (id: string) => {
     await session.commitTransaction();
     await session.endSession();
     return deletedStudent;
-  } catch (err) {
+  } catch (err: any) {
     await session.abortTransaction();
     await session.endSession();
-    throw new Error('Failed to delete student');
+    throw new Error(err);
   }
 };
 
